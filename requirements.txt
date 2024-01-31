@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchainhub
+langchain-mistralai
+chromadb
+bs4
+python-dotenv
+llama-index
+qdrant_client
+pypdf
+transformers
+torch
