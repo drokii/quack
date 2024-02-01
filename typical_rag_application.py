@@ -7,6 +7,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.chat_models import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
+from llama_index import PromptTemplate
 from quack_prompt_template import quackTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -32,6 +33,7 @@ def loadWebPage(webpage : str) -> List[Document]:
         bs_kwargs={"parse_only": bs4_strainer},
     )
     docs = loader.load()
+    print("Quack ate a webpage @ " + webpage)
     return docs
 
 def generateVectorStoreFromPageContents(docs: List[Document]) -> Chroma:
@@ -55,7 +57,8 @@ def generateVectorStoreFromPageContents(docs: List[Document]) -> Chroma:
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
-    vectorstore = Chroma.from_documents(documents=splits, embedding=OllamaEmbeddings())
+    vectorstore = Chroma.from_documents(documents=splits, embedding=OllamaEmbeddings(model="mistral:latest"))
+    print("Quack knows more than ever, as his brain has been enlarged with a vectorstore.")
     return vectorstore
 
 
@@ -79,7 +82,7 @@ def promptUsingVectorstore(vectorstore : Chroma, question : str):
     """
 
     retriever = vectorstore.as_retriever()
-    llm = ChatOllama(model="mixtral", temperature=0, request_timeout=120.0)
+    llm = ChatOllama(model="mistral:latest", temperature=0, request_timeout=15.0)
    
     rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
@@ -88,12 +91,24 @@ def promptUsingVectorstore(vectorstore : Chroma, question : str):
     | StrOutputParser()
     )
 
-    rag_chain.invoke(question)
+    print("Quack has heard your pleas.")
 
-def main():
-    loadedWebPage = loadWebPage("https://lilianweng.github.io/posts/2023-06-23-agent/")
-    vectorizedPage = generateVectorStoreFromPageContents(loadedWebPage)
-    promptUsingVectorstore(vectorizedPage, "What is the point of self reflection in AI Models?")
+    response = rag_chain.invoke(question)
+    return response
 
-if __name__ == "__main__":
-    main()
+def prompt(question : str):
+    llm = ChatOllama(model="mistral", temperature=0, request_timeout=15.0)
+
+    response = llm.invoke(question)
+
+    print("Quack has heard your pleas.. \n\n")
+
+    return response
+
+
+loadedWebPage = loadWebPage("https://lilianweng.github.io/posts/2023-06-23-agent/")
+vectorizedPage = generateVectorStoreFromPageContents(loadedWebPage)
+modelOutput = promptUsingVectorstore(vectorizedPage, "What is the point of self reflection in AI Models?")
+
+# modelOutput = prompt("Is God dead?")
+print(modelOutput)
